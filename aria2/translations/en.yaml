@@ -1,0 +1,29 @@
+---
+configuration:
+  download_dir:
+    name: Download folder
+    description: >-
+      Where downloads go. Must be under /media or /share, for example
+      /media/<network storage name>/downloads for a NAS added under
+      Settings > System > Storage.
+  require_mount:
+    name: Only start when the folder is on its own storage
+    description: >-
+      Refuse to start unless the download folder is on network storage or a
+      USB drive, so downloads can't fill the Home Assistant data disk when
+      that storage is missing.
+  seed_ratio:
+    name: Seed until ratio
+    description: >-
+      Stop seeding a finished torrent once it has uploaded this many times
+      its size. 0 means no ratio limit.
+  seed_time:
+    name: Seed for at most (minutes)
+    description: >-
+      Stop seeding a finished torrent after this many minutes. 4320 is 3
+      days. Seeding stops at whichever limit comes first.
+  max_upload:
+    name: Upload limit
+    description: >-
+      Total upload speed for all torrents, in bytes per second. Use K or M,
+      for example 2M (16 Mbit/s). 0 means no limit.
