@@ -6,6 +6,7 @@ in the Home Assistant sidebar.
 
 - Saves to a folder under `/media` or `/share`, including network storage
 - Signs in through Home Assistant: no separate password, no open port
-- Seeding and upload limits for torrents
+- Download and upload speed limits, seeding limits for torrents
+- Torrents can be turned off, for links only
 
 See the **Documentation** tab for details.

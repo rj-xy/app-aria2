@@ -36,14 +36,44 @@ fi
 mkdir -p "$DIR"
 touch /data/aria2.session
 
-echo "🌱 aria2 $(aria2c --version | head -n 1 | awk '{print $3}'), downloads to $DIR," \
-    "seeding to ratio $(opt seed_ratio) or $(opt seed_time) min, upload limit $(opt max_upload)"
+args=(
+    --conf-path=/etc/aria2/aria2.conf
+    --dir="$DIR"
+    --max-concurrent-downloads="$(opt concurrent_downloads)"
+    --max-connection-per-server="$(opt connections_per_download)"
+    --split="$(opt connections_per_download)"
+    --max-overall-download-limit="$(opt max_download)"
+    --console-log-level="$(opt log_level)"
+)
 
-aria2c --conf-path=/etc/aria2/aria2.conf \
-    --dir="$DIR" \
-    --seed-ratio="$(opt seed_ratio)" \
-    --seed-time="$(opt seed_time)" \
-    --max-overall-upload-limit="$(opt max_upload)" &
+echo "🌱 aria2 $(aria2c --version | head -n 1 | awk '{print $3}'), downloads to $DIR," \
+    "$(opt concurrent_downloads) at once, $(opt connections_per_download) connections each," \
+    "download limit $(opt max_download)"
+
+if [[ $(opt torrents) == true ]]; then
+    args+=(
+        --seed-ratio="$(opt seed_ratio)"
+        --seed-time="$(opt seed_time)"
+        --max-overall-upload-limit="$(opt max_upload)"
+    )
+    ln -sf rpc-torrents-on.conf /etc/nginx/rpc.conf
+    echo "🌱 Torrents on: seeding to ratio $(opt seed_ratio) or $(opt seed_time) min," \
+        "upload limit $(opt max_upload)"
+else
+    # nginx refuses magnets and .torrent files. As a backstop, aria2 has no way
+    # to find peers (no trackers, DHT or peer exchange), and a .torrent file
+    # downloaded from a link stays a plain file.
+    args+=(
+        --follow-torrent=false
+        '--bt-exclude-tracker=*'
+        --enable-dht=false
+        --enable-peer-exchange=false
+    )
+    ln -sf rpc-torrents-off.conf /etc/nginx/rpc.conf
+    echo "🌱 Torrents off: magnets and .torrent files are refused"
+fi
+
+aria2c "${args[@]}" &
 nginx -g 'daemon off;' &
 
 # If either one exits, stop the app so the watchdog restarts it

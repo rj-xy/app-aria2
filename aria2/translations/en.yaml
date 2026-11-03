@@ -12,6 +12,27 @@ configuration:
       Refuse to start unless the download folder is on network storage or a
       USB drive, so downloads can't fill the Home Assistant data disk when
       that storage is missing.
+  concurrent_downloads:
+    name: Downloads at once
+    description: >-
+      How many downloads run at the same time; the rest wait in the queue.
+      Torrents that are only seeding don't count.
+  connections_per_download:
+    name: Connections per download
+    description: >-
+      How many connections one download may open to a server, to split a big
+      file into parts. Some servers limit or block more than a few.
+  max_download:
+    name: Download limit
+    description: >-
+      Total download speed for all downloads, in bytes per second. Use K or
+      M, for example 4M (32 Mbit/s). 0 means no limit.
+  torrents:
+    name: Allow torrents
+    description: >-
+      Magnet links and .torrent files. Torrents show your internet address to
+      every peer. Off: aria2 refuses to add them and doesn't look for peers,
+      and a .torrent file from a link is saved as a plain file.
   seed_ratio:
     name: Seed until ratio
     description: >-
@@ -27,3 +48,8 @@ configuration:
     description: >-
       Total upload speed for all torrents, in bytes per second. Use K or M,
       for example 2M (16 Mbit/s). 0 means no limit.
+  log_level:
+    name: Log level
+    description: >-
+      How much aria2 writes to the app's log. notice shows each download
+      starting and finishing; debug is very verbose.

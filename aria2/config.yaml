@@ -1,6 +1,6 @@
 ---
 name: aria2
-version: "1.1.0"
+version: "1.2.0"
 slug: aria2
 description: Download manager for links and torrents, with the AriaNg web UI in the sidebar
 url: https://github.com/rj-xy/app-aria2
@@ -23,12 +23,22 @@ map:
 options:
   download_dir: /share/downloads
   require_mount: false
+  concurrent_downloads: 3
+  connections_per_download: 4
+  max_download: "0"
+  torrents: true
   seed_ratio: 1.0
   seed_time: 4320
   max_upload: 2M
+  log_level: notice
 schema:
   download_dir: match(^/(media|share)/.+$)
   require_mount: bool
+  concurrent_downloads: int(1,16)
+  connections_per_download: int(1,16)
+  max_download: match(^[0-9]+[KM]?$)
+  torrents: bool
   seed_ratio: float(0,)
   seed_time: int(0,)
   max_upload: match(^[0-9]+[KM]?$)
+  log_level: list(debug|info|notice|warn|error)

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Option to turn torrents off: magnet links and `.torrent` files are then
+  refused with a message, and aria2 doesn't look for peers.
+- Options for downloads at once, connections per download, a download speed
+  limit and the log level.
+
 ## 1.1.0
 
 - First public release.

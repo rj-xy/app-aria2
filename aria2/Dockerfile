@@ -3,10 +3,12 @@ FROM ${BUILD_FROM}
 
 # aria2 is Alpine's own package (1.37.0, with BitTorrent, Metalink and HTTPS).
 # AriaNg is the web UI; its release zip is checked against the GitHub digest.
+# nginx's njs module refuses torrents when they are off (rpc-filter.js).
 ARG ARIANG_VERSION=1.3.15
 ARG ARIANG_SHA256=d2317e441966ad31f1e342cb6a6cc1c51808fb0a10cf6e39cb30b0517b3e7823
-RUN apk add --no-cache aria2 ca-certificates nginx \
+RUN apk add --no-cache aria2 ca-certificates nginx nginx-mod-http-js \
     && aria2c --version | grep -q 'Enabled Features:.*BitTorrent' \
+    && test -f /usr/lib/nginx/modules/ngx_http_js_module.so \
     && wget -q -O /tmp/ariang.zip "https://github.com/mayswind/AriaNg/releases/download/${ARIANG_VERSION}/AriaNg-${ARIANG_VERSION}.zip" \
     && echo "${ARIANG_SHA256}  /tmp/ariang.zip" | sha256sum -c - \
     && mkdir -p /var/www/ariang \

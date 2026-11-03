@@ -37,19 +37,38 @@ Removing a download in AriaNg keeps its files. Delete them with a file manager
 | --- | --- | --- |
 | `download_dir` | `/share/downloads` | Where downloads go. Under `/media` or `/share` |
 | `require_mount` | `false` | Refuse to start unless that folder is on network storage or a USB drive, so a missing NAS can't fill the Home Assistant data disk |
+| `concurrent_downloads` | `3` | Downloads running at the same time (1 to 16); the rest wait. Torrents that are only seeding don't count |
+| `connections_per_download` | `4` | Connections one download may open to a server, to fetch a big file in parts (1 to 16) |
+| `max_download` | `0` | Total download speed in bytes per second (`4M` = 32 Mbit/s, `0`: no limit) |
+| `torrents` | `true` | Allow magnet links and `.torrent` files. See [Torrents off](#torrents-off) |
 | `seed_ratio` | `1.0` | Stop seeding a finished torrent at this share ratio (`0`: no ratio limit) |
 | `seed_time` | `4320` | Stop seeding after this many minutes (3 days). Whichever limit comes first wins |
 | `max_upload` | `2M` | Total upload speed in bytes per second (`2M` = 16 Mbit/s, `0`: no limit) |
+| `log_level` | `notice` | How much aria2 writes to the app's log: `debug`, `info`, `notice`, `warn` or `error` |
 
+The seeding options and the upload limit only matter with `torrents` on.
 Other settings are aria2's defaults plus a few in
 [aria2.conf](https://github.com/rj-xy/app-aria2/blob/main/aria2/rootfs/etc/aria2/aria2.conf):
-3 downloads at once, up to 4 connections per server, no file preallocation, DHT on.
+no file preallocation, parts of at least 20 MB, DHT on.
+
+### Torrents off
+
+With `torrents` off, the app downloads links only:
+
+- Adding a magnet link or a `.torrent` file fails with "Torrents are off in
+  the app's options".
+- A link to a `.torrent` file downloads the file itself and doesn't start the torrent.
+- aria2 has no way to find peers (no trackers, DHT or peer exchange), so
+  torrents already in the queue stay at 0 connections. Remove them in AriaNg.
+
+It's a switch, not a lock: anyone who can open the sidebar is a Home Assistant
+admin and can turn it back on.
 
 ## Privacy and security
 
 - **Torrents use your own internet address.** There is no VPN in this app:
   every peer in a swarm sees your public IP. Download only what you have the
-  right to.
+  right to, or turn `torrents` off.
 - No port is published, so aria2 only dials out to peers. That is enough to
   download and to upload to peers that accept connections.
 - The web UI and aria2's RPC are only reachable through Home Assistant's
