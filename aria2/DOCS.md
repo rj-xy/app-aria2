@@ -14,7 +14,11 @@ is its web UI, in the Home Assistant sidebar as **aria2**.
 
 - **A link:** **+ New** → paste one or more links → **Start Now**. Per-download
   options (folder, file name, connections, checksum) are on the **Options** tab.
-- **A magnet link:** **+ New** → paste it → **Start Now**.
+- **A magnet link:** **+ New** → paste it → **Start Now**. aria2 first fetches
+  the torrent's details from peers, so a magnet needs peers that speak plain
+  BitTorrent. aria2 can't reach browser peers (WebTorrent), and a magnet can't
+  use web seeds, so a torrent seeded only by browsers or only over HTTP (many
+  archive.org items) waits at 0 connections. Use its `.torrent` file instead.
 - **A `.torrent` file:** **+ New** → the folder button next to the tabs →
   **Open Torrent File** → **Start Now**. aria2 keeps a copy named
   `<hash>.torrent` in the download folder, so the queue can resume after a restart.
@@ -23,6 +27,9 @@ is its web UI, in the Home Assistant sidebar as **aria2**.
 - **Checksum:** **Options** → `checksum` = `sha-256=<hex>` checks the finished file.
 
 The queue survives restarts and is in the app's backups.
+
+Removing a download in AriaNg keeps its files. Delete them with a file manager
+(for example the File Explorer app or a network share).
 
 ## Options
 
