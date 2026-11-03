@@ -4,6 +4,11 @@
 torrents (magnet links and `.torrent` files). [AriaNg](https://github.com/mayswind/AriaNg)
 is its web UI, in the Home Assistant sidebar as **aria2**.
 
+Source code and issues: [github.com/rj-xy/app-aria2](https://github.com/rj-xy/app-aria2).
+The image is built from the [aria2 folder](https://github.com/rj-xy/app-aria2/tree/main/aria2)
+([Dockerfile](https://github.com/rj-xy/app-aria2/blob/main/aria2/Dockerfile)) by
+[GitHub Actions](https://github.com/rj-xy/app-aria2/actions/workflows/build.yaml).
+
 ## Install
 
 1. Install the app, then set the **Download folder** on the **Configuration** tab.
