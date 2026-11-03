@@ -18,14 +18,19 @@ Architectures: `aarch64` (Raspberry Pi 4 and 5) and `amd64`.
 ## Releases
 
 GitHub Actions ([build.yaml](.github/workflows/build.yaml)) builds both images on
-every push and pull request. Publishing a GitHub release pushes them to
-`ghcr.io/rj-xy/app-aria2/<arch>:<version>`. The release tag must match
-`version` in [aria2/config.yaml](aria2/config.yaml); Home Assistant offers the
-update once the images are up.
+every push and pull request. When `main` has a `version` in
+[aria2/config.yaml](aria2/config.yaml) with no release yet, it pushes the images
+to `ghcr.io/rj-xy/app-aria2/<arch>:<version>` and then publishes release
+`v<version>`, with that version's section of
+[aria2/CHANGELOG.md](aria2/CHANGELOG.md) as its notes.
 
-1. Raise `version` in `aria2/config.yaml` and add the changes to `aria2/CHANGELOG.md`.
+1. Raise `version` in `aria2/config.yaml` and add a `## <version>` section to
+   `aria2/CHANGELOG.md` (the build fails without one).
 2. Push to `main`.
-3. Publish a release tagged `v<version>`.
+
+Home Assistant reads the version from `main`, so it can offer the update a
+minute or two before the images are up. If an update fails then, try again
+once the release shows on GitHub.
 
 ## Licence
 

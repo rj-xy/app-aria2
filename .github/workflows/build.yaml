@@ -2,8 +2,10 @@
 name: Build
 
 # Builds the aarch64 and amd64 images on every push and pull request.
-# Publishing a GitHub release also pushes them to
-# ghcr.io/<owner>/app-aria2/<arch>:<version>, which Home Assistant pulls.
+# When main has a version in aria2/config.yaml with no v<version> tag yet, it
+# also pushes them to ghcr.io/<owner>/app-aria2/<arch>:<version>, which Home
+# Assistant pulls, then publishes release v<version> with that version's
+# section of aria2/CHANGELOG.md as its notes.
 
 # yamllint disable-line rule:truthy
 on:
@@ -11,16 +13,70 @@ on:
   push:
     branches:
       - main
-  release:
-    types:
-      - published
   workflow_dispatch:
 
 permissions: {}
 
+# Pushes to main wait for each other, so a version is released only once.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  check:
+    name: Check the version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
+      notes: ${{ steps.version.outputs.notes }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Look for a new version
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+        run: |
+          version=$(yq --no-colors eval '.version' aria2/config.yaml)
+          notes=$(awk -v head="## $version" '$0 == head {on = 1; next} /^## / {on = 0} on' aria2/CHANGELOG.md | sed '/./,$!d')
+          if [[ -z $notes ]]; then
+            echo "::error ::aria2/CHANGELOG.md has no section for version $version"
+            exit 1
+          fi
+          status=0
+          git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null || status=$?
+          case $status in
+            0) new=false ;;
+            2) new=true ;;
+            *) echo "::error ::Couldn't read the tags from GitHub"; exit 1 ;;
+          esac
+          release=false
+          if [[ $new == true ]]; then
+            if [[ $EVENT != pull_request && $REF == refs/heads/main ]]; then
+              release=true
+              echo "::notice ::New version $version: pushing the images and publishing v$version"
+            else
+              echo "::notice ::New version $version: merging into main publishes v$version"
+            fi
+          fi
+          {
+            echo "version=$version"
+            echo "release=$release"
+            echo "notes<<EOF_NOTES"
+            echo "$notes"
+            echo "EOF_NOTES"
+          } >> "$GITHUB_OUTPUT"
+
   build:
     name: Build ${{ matrix.arch }}
+    needs: check
     runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     permissions:
       contents: read
@@ -41,26 +97,13 @@ jobs:
         id: info
         env:
           ARCH: ${{ matrix.arch }}
-          EVENT: ${{ github.event_name }}
-          TAG: ${{ github.event.release.tag_name }}
         run: |
-          version=$(yq --no-colors eval '.version' aria2/config.yaml)
-          push=false
-          if [[ $EVENT == release ]]; then
-            if [[ ${TAG#v} != "$version" ]]; then
-              echo "::error ::Release tag $TAG doesn't match version $version in aria2/config.yaml"
-              exit 1
-            fi
-            push=true
-          fi
           case $ARCH in
             aarch64) platform=linux/arm64/v8 ;;
             amd64) platform=linux/amd64 ;;
             *) echo "::error ::Unknown architecture $ARCH"; exit 1 ;;
           esac
           {
-            echo "version=$version"
-            echo "push=$push"
             echo "platform=$platform"
             echo "from=$(yq --no-colors eval ".build_from.$ARCH" aria2/build.yaml)"
             echo "name=$(yq --no-colors eval '.name' aria2/config.yaml)"
@@ -72,21 +115,21 @@ jobs:
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Log in to GitHub Container Registry
-        if: steps.info.outputs.push == 'true'
+        if: needs.check.outputs.release == 'true'
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build, and push on a release
+      - name: Build, and push a new version
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: aria2
           file: aria2/Dockerfile
           platforms: ${{ steps.info.outputs.platform }}
-          push: ${{ steps.info.outputs.push == 'true' }}
-          tags: ghcr.io/${{ github.repository_owner }}/app-aria2/${{ matrix.arch }}:${{ steps.info.outputs.version }}
+          push: ${{ needs.check.outputs.release == 'true' }}
+          tags: ghcr.io/${{ github.repository_owner }}/app-aria2/${{ matrix.arch }}:${{ needs.check.outputs.version }}
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
           build-args: |
@@ -97,4 +140,22 @@ jobs:
             BUILD_NAME=${{ steps.info.outputs.name }}
             BUILD_REF=${{ github.sha }}
             BUILD_REPOSITORY=${{ github.repository }}
-            BUILD_VERSION=${{ steps.info.outputs.version }}
+            BUILD_VERSION=${{ needs.check.outputs.version }}
+
+  release:
+    name: Release
+    needs:
+      - check
+      - build
+    if: needs.check.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish the release
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ needs.check.outputs.notes }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: gh release create "v$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes "$NOTES"
