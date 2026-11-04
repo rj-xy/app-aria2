@@ -15,6 +15,15 @@ Or add it by hand: **Settings** → **Apps** → **App store** → ⋮ →
 
 Architectures: `aarch64` (Raspberry Pi 4 and 5) and `amd64`.
 
+## Coming to alexbelgium's repository?
+
+I've offered this app to [alexbelgium/hassio-addons](https://github.com/alexbelgium/hassio-addons),
+which many Home Assistant users already have added. If Alex accepts it, aria2
+will show up in their app store without adding this repository. Follow
+[alexbelgium/hassio-addons#3192](https://github.com/alexbelgium/hassio-addons/issues/3192)
+for his answer. Until then, and for as long as this repository stays up, install
+it from here.
+
 ## Releases
 
 GitHub Actions ([build.yaml](.github/workflows/build.yaml)) builds both images on
